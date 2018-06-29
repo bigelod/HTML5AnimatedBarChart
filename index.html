@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<script>
+//Based on code from http://www.d0kt0r0.net/teaching/javascript-canvas-introduction.html
+//Draws the funds provided to Canadian universities by federal and provincial sources ( from Stats Canada: http://www5.statcan.gc.ca/cansim/a26?lang=eng&id=4770058b )
+var currVal = 0; //Current value as percentage
+var currColumn = 0; //Current column
+var raiseSpeed = 5; //Raise speed of column in percent of max
+var animFinished = false; //Animation finished?
+var years = ["2010-11","2011-12","2012-13","2013-14","2014-15"]; //The years in a string array
+var funds = ["$17,655,372,000","$17,228,654,000","$17,124,226,000","$17,147,965,000","$17,067,434,000"]; //The funds to Canadian universities in federal and provincial total
+var fundamt = [655372,228654,124226,147965,67434]; //Used to store the numerical value of difference in funds
+var barheights = []; //Used to later store the last known bar height
+var maxfunds = 655372; //The highest value, will be the tallest column
+var maxheight = 300; //Max height of a bar
+var barwidth = 100; //Max width of a bar
+var bargap = 30; //Gap between bars
+var starty = 540; //Start Y of graph
+var startx = 110; //Start X of graph
+
+var canvas; //Stores the canvas
+var context; //Stores the drawing context
+var myInterval; //Stores the "loop"
+
+function animloop() {
+	
+	if (!animFinished) {
+		//We are still animating!
+		context.clearRect(0, 0, 800, 600); //Clear the screen
+			
+		//Handle columns
+		for (i = 0; i < years.length; i++) {
+			//Draw the bars for each column and their text
+			var barpos = startx + (bargap/2) + i*(barwidth + bargap); //The X position of this bar
+			var barheight = (fundamt[i] / maxfunds) * maxheight; //The maximum height of this bar
+			
+			context.fillStyle = "blue"; //Draw bar first
+			
+			if (i == currColumn) { 
+				//This is the last one, so we're likely still working on it
+				var actualheight = (currVal/100) * barheight; //Not full size yet, still increasing
+				
+				context.fillRect(barpos, starty - actualheight, barwidth, actualheight);
+				barheights[i] = actualheight;
+				
+			}else {			
+				//Otherwise, check if this is an already finished column
+				if (i < currColumn) {
+					context.fillRect(barpos, starty - barheight, barwidth, barheight); //A full bar
+					barheights[i] = barheight;
+				}
+			}
+			
+			//Things that always draw are the column names
+			
+			context.fillStyle = "black";
+			context.font = "12px Arial";
+			context.fillText(years[i], barpos + (bargap/1.25), starty + 25);
+			
+			context.fillText(funds[i], barpos, starty - barheights[i] - 5);
+		}
+		
+		//Draw the grid
+		gridwidth = (barwidth + bargap + (bargap/4)) * years.length;
+		
+		context.fillStyle = "black";
+		
+		context.beginPath();
+		context.moveTo(startx, starty - maxheight - 100); //100px buffer at top
+		context.lineTo(startx, starty); //Row line
+		context.moveTo(startx, starty); //Re-position start point
+		context.lineTo(startx + gridwidth, starty); //Column line
+		context.closePath();
+		
+		context.stroke();
+		
+		//Draw the grid text
+		context.fillStyle = "black";
+		
+		context.font = "bold 24px Arial";
+		context.fillText("Federal and Provincial Funding to Canadian Universities", 80, 50);
+		
+		context.font = "bold 12px Arial";
+		context.fillText("Funding in $", 20, starty - maxheight - 100);
+		
+		context.font = "12px Arial";
+		//context.fillText("$17,655,372,000", 10, starty - maxheight);
+		
+		context.fillText("$17,000,000,000", 10, starty + 5); //Start line for data, to make stronger impact
+		
+		context.font = "bold 12px Arial";
+		context.fillText("Funding Period", startx + gridwidth/2 - 50, starty + 50);
+		
+		//Update values
+		if (currVal < 100) {
+			currVal += raiseSpeed;
+		} else {
+			if (currColumn < years.length) {
+			//We have another column to do now
+				currVal = 0; //Reset our current value
+				currColumn += 1; //Next column
+			} else {
+			//Nope, all done now
+				animFinished = true; //No need to animate anymore
+			}
+		}
+		
+	} else {
+		//Otherwise stop the loop
+		console.log("Finished! Stopping interval.");
+		clearInterval(myInterval);
+	}
+	
+}
+
+function restart() {
+	//Reset when clicked
+	console.log("Canvas clicked! Restarting.");
+	
+	animFinished = false;
+	currVal = 0;
+	currColumn = 0;
+	barheights = [];
+	
+	clearInterval(myInterval); //Free the old loop
+	myInterval = setInterval(function() { animloop(); }, 30); //Every 30ms run animloop, used to animate the rising columns
+}
+
+function setup() {
+     // everything between the preceding curly brace and the matching one below happens after the document has loaded
+     
+	canvas = document.getElementById("myCanvas"); // find the canvas we already included via HTML below
+	context = canvas.getContext("2d"); // get the drawing context for that canvas
+	
+	myInterval = setInterval(function() { animloop(); }, 30); //Every 30ms run animloop, used to animate the rising columns
+	
+	canvas.addEventListener("click", function() { restart(); });
+}
+</script>
+<body onload="setup();">
+<canvas width="800" height="600" id="myCanvas"></canvas>
+</body>
+</html>
